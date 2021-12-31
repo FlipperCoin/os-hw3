@@ -1,5 +1,6 @@
 *.cgi
 *.o
+.vscode/
 public/
 server
 client
