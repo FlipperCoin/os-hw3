@@ -41,7 +41,14 @@ void* workerThread(void* args)
     while (1) {
         pthread_mutex_lock(&queue_m);   
         
-        if (!first_run) threads_working--;
+        if (!first_run) {
+            threads_working--;
+            // if not full anymore
+            if (queue_count + threads_working == queue_size-1) {
+                printf("DEBUG worker thread: queue not full, signaling...\n");
+                pthread_cond_signal(&queue_full_cond);
+            }
+        }
         first_run = 0;
         
         if (queue_count < 1) printf("DEBUG worker thread: queue empty, waiting...\n");
@@ -53,12 +60,6 @@ void* workerThread(void* args)
         queue_head = (queue_head + 1) % queue_size;
         queue_count--;
         threads_working++;
-
-        // if not full anymore
-        if (queue_count + threads_working == queue_size-1) {
-            printf("DEBUG worker thread: queue not full, signaling...\n");
-            pthread_cond_signal(&queue_full_cond);
-        }
 
         printf("DEBUG worker thread: handling request.\n");
         pthread_mutex_unlock(&queue_m);
