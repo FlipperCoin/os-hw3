@@ -25,7 +25,7 @@ void getargs(int *port, int* threads, int* queue_size, char** schedalg, int argc
     *schedalg = argv[4];
 }
 
-#define DEBUG 1
+#define DEBUG 0
 
 typedef struct {
     int fd;

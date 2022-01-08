@@ -132,7 +132,7 @@ off_t Lseek(int fildes, off_t offset, int whence)
 
 void Close(int fd) 
 {
-    printf("DEBUG Closing socket, fd %d.\n", fd);
+    //printf("DEBUG Closing socket, fd %d.\n", fd);
     int rc;
 
     if ((rc = close(fd)) < 0)
