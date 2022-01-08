@@ -25,6 +25,8 @@ void getargs(int *port, int* threads, int* queue_size, char** schedalg, int argc
     *schedalg = argv[4];
 }
 
+#define DEBUG 1
+
 typedef struct {
     int fd;
     int is_dropped;
@@ -56,18 +58,18 @@ void* workerThread(void* args)
             threads_working--;
             // if not full anymore
             if (queue_count + threads_working == queue_size-1) {
-                printf("DEBUG %lu worker thread %d: queue not full, signaling...\n", time(NULL), thread_id);
+                if (DEBUG) printf("DEBUG %lu worker thread %d: queue not full, signaling...\n", time(NULL), thread_id);
                 pthread_cond_signal(&queue_full_cond);
             }
         }
         first_run = 0;
         
-        if (queue_count < 1) printf("DEBUG %lu worker thread %d: queue empty, waiting...\n", time(NULL), thread_id);
+        if (queue_count < 1 && DEBUG) printf("DEBUG %lu worker thread %d: queue empty, waiting...\n", time(NULL), thread_id);
         while (queue_count < 1) {
             pthread_cond_wait(&queue_empty_cond, &queue_m);
         }
 
-        printf("DEBUG %lu worker thread %d: handling request in queue: %d.\n", time(NULL), thread_id, queue_head);
+        if (DEBUG) printf("DEBUG %lu worker thread %d: handling request in queue: %d.\n", time(NULL), thread_id, queue_head);
         
         queue_entry_t entry = queue[queue_head];
         int clifd = entry.fd;
@@ -176,29 +178,29 @@ int main(int argc, char *argv[])
         connfd = Accept(listenfd, (SA *)&clientaddr, (socklen_t *) &clientlen);
         struct timeval arrival_time;
         gettimeofday(&arrival_time,NULL);
-        printf("DEBUG master thread: accepted new client\n");
+        if (DEBUG) printf("DEBUG master thread: accepted new client\n");
 
         pthread_mutex_lock(&queue_m);
         if ((queue_count + threads_working) == queue_size) { 
-            printf("DEBUG master thread: queue full.\n");
+            if (DEBUG) printf("DEBUG master thread: queue full.\n");
             switch(policy) {
                 case SCHPOL_BLOCK: 
-                    printf("DEBUG master thread: waiting...\n");
+                    if (DEBUG) printf("DEBUG master thread: waiting...\n");
                     while ((queue_count + threads_working) == queue_size) {
                         pthread_cond_wait(&queue_full_cond, &queue_m);
                     }
                     insertQueue(connfd,arrival_time);
                     if (queue_count == 1) {
-                        printf("DEBUG master thread: queue not empty(i was full), signaling...\n");
+                        if (DEBUG) printf("DEBUG master thread: queue not empty(i was full), signaling...\n");
                         pthread_cond_broadcast(&queue_empty_cond);
                     }
                     break; 
                 case SCHPOL_TAIL:
-                    printf("DEBUG master thread: dropping tail...\n");
+                    if (DEBUG) printf("DEBUG master thread: dropping tail...\n");
                     Close(connfd);
                     break;
                 case SCHPOL_HEAD:
-                    printf("DEBUG master thread: dropping head...\n");
+                    if (DEBUG) printf("DEBUG master thread: dropping head...\n");
                     if (queue_count == 0) {
                         Close(connfd);
                         break;
@@ -206,18 +208,19 @@ int main(int argc, char *argv[])
                     removeHead();
                     insertQueue(connfd,arrival_time);
                     if (queue_count == 1) {
-                        printf("DEBUG master thread: queue not empty(i was full), signaling...\n");
+                        if (DEBUG) printf("DEBUG master thread: queue not empty(i was full), signaling...\n");
                         pthread_cond_broadcast(&queue_empty_cond);
                     }
                     break;
                 case SCHPOL_RANDOM:
-                    printf("DEBUG master thread: dropping random...\n");
+                    if (DEBUG) printf("DEBUG master thread: dropping random...\n");
                     if (queue_count == 0) {
                         Close(connfd);
                         break;
                     }
                     srand(time(NULL));
-                    for (int i = 0; i < queue_count / 2; i++) {
+                    int num_to_drop = ((queue_count / 2) + (queue_count % 2));
+                    for (int i = 0; i < num_to_drop; i++) {
                         int j;
                         do
                         {
@@ -230,7 +233,7 @@ int main(int argc, char *argv[])
                     }
                     int i = queue_head;
                     int j = queue_head;
-                    for (int counter = 0; counter < ((queue_count / 2) + (queue_count % 2)); counter++)
+                    for (int counter = 0; counter < num_to_drop; counter++)
                     {
                         while (queue[j].is_dropped) {
                             j = (j + 1) % queue_size;
@@ -239,16 +242,16 @@ int main(int argc, char *argv[])
                         j = (j + 1) % queue_size;
                         i = (i + 1) % queue_size;
                     }
-                    queue_count -= ((queue_count / 2) + (queue_count % 2));
+                    queue_count -= num_to_drop;
                     queue_tail = (queue_head + queue_count) % queue_size;
                     insertQueue(connfd,arrival_time);
                     if (queue_count == 1) {
-                        printf("DEBUG master thread: queue not empty(i was full), signaling...\n");
+                        if (DEBUG) printf("DEBUG master thread: queue not empty(i was full), signaling...\n");
                         pthread_cond_broadcast(&queue_empty_cond);
                     }
                     break;
                 default:
-                    printf("DEBUG master thread: no sched alg???");
+                    if (DEBUG) printf("DEBUG master thread: no sched alg???");
                     exit(1);
                     break;
             }
@@ -256,7 +259,7 @@ int main(int argc, char *argv[])
         else {
             insertQueue(connfd,arrival_time);
             if (queue_count == 1) {
-                printf("DEBUG master thread: queue not empty, signaling...\n");
+                if (DEBUG) printf("DEBUG master thread: queue not empty, signaling...\n");
                 pthread_cond_broadcast(&queue_empty_cond);
             }
         }

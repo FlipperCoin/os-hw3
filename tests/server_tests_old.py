@@ -42,7 +42,7 @@ class RequestsTest(unittest.TestCase):
         self.thread_count = thread_count
         self.policy = policy
         if policy == 'random':
-            self.per_drop_size = int(0.5 * self.queue_size)
+            self.per_drop_size = int(0.25 * self.queue_size)
         elif policy in ['dt', 'dh']:
             self.per_drop_size = 1
         elif policy == 'block':
@@ -150,7 +150,6 @@ class RequestsTest(unittest.TestCase):
             total_count += stat['count']
             total_dyn += stat['dyn']
 
-
         print(f'Requests succeeded: {total_count}')
         print(f'Requests failed: {error_count}')
 
@@ -198,7 +197,7 @@ class TestDropRandomRequests(RequestsTest):
         asyncio.run(self.make_requests(self.dyn_url, self.max_reqs + 1))
 
     def test_double_drop_random(self):
-        asyncio.run(self.make_requests(self.dyn_url, self.max_reqs + 2 * int(0.5 * self.queue_size)))
+        asyncio.run(self.make_requests(self.dyn_url, self.max_reqs + 2 * int(0.25 * self.queue_size)))
 
     def test_no_drop(self):
         asyncio.run(self.make_requests(self.dyn_url, self.max_reqs))

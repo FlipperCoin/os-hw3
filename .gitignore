@@ -4,3 +4,5 @@
 public/
 server
 client
+__pycache__/
+venv/
