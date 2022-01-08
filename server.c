@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
                     insertQueue(connfd,arrival_time);
                     if (queue_count == 1) {
                         printf("DEBUG master thread: queue not empty(i was full), signaling...\n");
-                        pthread_cond_signal(&queue_empty_cond);
+                        pthread_cond_broadcast(&queue_empty_cond);
                     }
                     break; 
                 case SCHPOL_TAIL:
@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
                     insertQueue(connfd,arrival_time);
                     if (queue_count == 1) {
                         printf("DEBUG master thread: queue not empty(i was full), signaling...\n");
-                        pthread_cond_signal(&queue_empty_cond);
+                        pthread_cond_broadcast(&queue_empty_cond);
                     }
                     break;
                 case SCHPOL_RANDOM:
@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
                     insertQueue(connfd,arrival_time);
                     if (queue_count == 1) {
                         printf("DEBUG master thread: queue not empty(i was full), signaling...\n");
-                        pthread_cond_signal(&queue_empty_cond);
+                        pthread_cond_broadcast(&queue_empty_cond);
                     }
                     break;
                 default:
